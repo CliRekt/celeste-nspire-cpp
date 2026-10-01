@@ -1,4 +1,5 @@
 #include <libndls.h>
+#include <nspireio/nspireio.h>  // For screen I/O functions
 #include "assets.h"
 
 class CelesteGame {
