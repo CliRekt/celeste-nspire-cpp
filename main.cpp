@@ -1,26 +1,32 @@
 #include <libndls.h>
-#include <nspireio/nspireio.h>  // For screen I/O functions
+#include <nspireio/nspireio.h>
 #include "assets.h"
 
 class CelesteGame {
 public:
     void init() {
-        assert_ndless_compatibility();
-        lcd_ingame_setup();
-        clearScreen();
+        // Initialize nspireio for screen I/O
+        nspireio_init(NSPIREIO_LCD, NSPIREIO_8BIT);
     }
 
     void render() {
-        clearScreen();
-        drawString(20, 20, GAME_TITLE, 0xFFFF, 0x0000);
-        drawString(20, 45, "Engine: C++ & Python Pipeline", 0x07E0, 0x0000);
-        drawString(20, 70, "Press any key on calculator to exit.", 0xC67A, 0x0000);
-        repaint();
+        // Clear the screen using nspireio
+        nspireio_cls(NSPIREIO_LCD);
+        
+        // Draw strings using nspireio_printf or direct LCD functions
+        nspireio_puts(NSPIREIO_LCD, GAME_TITLE);
+        nspireio_puts(NSPIREIO_LCD, "Engine: C++ & Python Pipeline");
+        nspireio_puts(NSPIREIO_LCD, "Press any key on calculator to exit.");
+        
+        // Refresh display
+        nspireio_flush(NSPIREIO_LCD);
     }
 
     void run() {
         init();
         render();
+        
+        // Wait for key press
         wait_key_pressed();
     }
 };
