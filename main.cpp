@@ -1,34 +1,29 @@
 #include <libndls.h>
+#include <stdlib.h>
 
-// Mandatory program definitions for Ndless loader
-PRG_NAME("Celeste")
-SHOW_MSG("Loading Celeste...")
-
-// Required linker cleanup symbol
 extern "C" void _fini(void) {}
 
 int main() {
-    // Handshake with Ndless engine
     assert_ndless_rev(45);
 
-    // Initialize screen mode safely via SDK
-    lcd_init(SCR_320x240_16);
+    // Allocate a 320x240 buffer in 16-bit color (RGB565)
+    // 320 * 240 * 2 bytes = 153,600 bytes
+    uint16_t *buffer = (uint16_t*) malloc(320 * 240 * sizeof(uint16_t));
 
-    // Get active frame buffer pointer safely
-    uint16_t *framebuffer = (uint16_t*) SCREEN_BASE_ADDRESS;
-
-    if (framebuffer) {
-        // Fill screen with White (0xFFFF)
+    if (buffer) {
+        // Fill buffer with White (0xFFFF)
         for (int i = 0; i < 320 * 240; i++) {
-            framebuffer[i] = 0xFFFF;
+            buffer[i] = 0xFFFF;
         }
+
+        // Blit buffer to screen using proper SDK API
+        lcd_blit(buffer, SCR_320x240_16);
+
+        // Wait for user to press any key
+        wait_key_pressed();
+
+        free(buffer);
     }
-
-    // Wait for any key press so it doesn't instantly terminate
-    wait_key_pressed();
-
-    // Clean up graphics mode on exit
-    lcd_ign_gunused();
 
     return 0;
 }
