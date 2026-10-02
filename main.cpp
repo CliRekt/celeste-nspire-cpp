@@ -5,27 +5,19 @@
 class CelesteGame {
 public:
     void init() {
-        // Initialize nspireio for screen I/O
-        nio_init(NIO_LCD, NIO_8BIT, NULL);
+        nio_init();
     }
 
     void render() {
-        // Clear the screen using nspireio
-        nio_clear(NIO_LCD);
-        
-        // Draw strings using nio_printf
-        nio_printf(NIO_LCD, GAME_TITLE);
-        nio_printf(NIO_LCD, "\n");
-        nio_printf(NIO_LCD, "Engine: C++ & Python Pipeline");
-        nio_printf(NIO_LCD, "\n");
-        nio_printf(NIO_LCD, "Press any key on calculator to exit.");
+        nio_clear();
+        nio_printf("Celeste\n");
+        nio_printf("Engine: C++ & Python Pipeline\n");
+        nio_printf("Press any key on calculator to exit.\n");
     }
 
     void run() {
         init();
         render();
-        
-        // Wait for key press
         wait_key_pressed();
     }
 };
