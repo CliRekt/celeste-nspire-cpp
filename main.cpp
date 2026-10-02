@@ -6,24 +6,21 @@
 extern "C" void _fini(void) {}
 
 int main() {
-    // Initialize the screen safely before any drawing
-    lcd_init(LCD_BUFFER_L);
+    // Initialize nspireio for console output
+    nio_console console;
+    nio_init_console(&console);
     
-    // Draw a simple black screen to confirm entry point is stable
-    lcd_fillrect(0, 0, LCD_WIDTH, LCD_HEIGHT, 0x0000);
+    // Clear the console/screen
+    nio_printf(&console, "\n\nCeleste Engine Ready\n");
+    nio_printf(&console, "Press any key to exit\n");
     
-    // Simple status message using debug output
-    draw_string(0, 0, "Celeste Engine Ready", COLOR_WHITE, COLOR_BLACK);
-    draw_string(0, 20, "Press any key to exit", COLOR_WHITE, COLOR_BLACK);
-    
-    // Wait for a key press in a stable loop
+    // Wait for a key press
     while (!any_key_pressed()) {
         // Simple main loop - minimal processing
-        // Rendering confirmed to be stable at this point
     }
     
-    // Clean shutdown
-    lcd_shutdown();
+    // Close console
+    nio_close_console(&console);
     
     return 0;
 }
