@@ -23,27 +23,6 @@ void draw_rect(uint16_t *buffer, int x, int y, int w, int h, uint16_t color) {
     }
 }
 
-// Transparent sprite renderer (skips 0x0000 key, handles horizontal flip)
-void draw_sprite_masked(uint16_t *buffer, const uint16_t *sprite_data, int x, int y, int w, int h, bool flip_x) {
-    for (int py = 0; py < h; py++) {
-        int target_y = y + py;
-        if (target_y < 0 || target_y >= SCREEN_HEIGHT) continue;
-
-        for (int px = 0; px < w; px++) {
-            int target_x = x + px;
-            if (target_x < 0 || target_x >= SCREEN_WIDTH) continue;
-
-            int src_x = flip_x ? (w - 1 - px) : px;
-            uint16_t pixel = sprite_data[py * w + src_x];
-
-            // Skip transparent background pixels
-            if (pixel != 0x0000) {
-                buffer[target_y * SCREEN_WIDTH + target_x] = pixel;
-            }
-        }
-    }
-}
-
 #define LEVEL_WIDTH 20  
 #define LEVEL_HEIGHT 15 
 #define TILE_SIZE 16
@@ -111,13 +90,13 @@ struct Player {
     int dash_dir_y;
 };
 
-Player player = {160, 200, 0, 0, 8, 8, false, false, true, 0, 0, 0};
+Player player = {160, 200, 0, 0, 8, 12, false, false, true, 0, 0, 0};
 
 const int GRAVITY = 1;
 const int JUMP_POWER = -10;
 const int MOVE_SPEED = 4;
 const int DASH_SPEED = 10;
-const int DASH_DURATION = 6; // frames
+const int DASH_DURATION = 6; 
 
 bool is_solid_at(int px, int py) {
     int tx = px / TILE_SIZE;
@@ -126,7 +105,6 @@ bool is_solid_at(int px, int py) {
     return LEVEL_MAP[ty][tx] == 1; 
 }
 
-// Full 4-corner bounding box collision check
 bool is_solid_box(int px, int py, int w, int h) {
     return is_solid_at(px, py) ||
            is_solid_at(px + w - 1, py) ||
@@ -135,27 +113,23 @@ bool is_solid_box(int px, int py, int w, int h) {
 }
 
 void update_player() {
-    // Handling active dash state
     if (player.dash_timer > 0) {
         player.dash_timer--;
         player.vx = player.dash_dir_x * DASH_SPEED;
         player.vy = player.dash_dir_y * DASH_SPEED;
     } else {
-        // Normal Gravity & Friction
         player.vy += GRAVITY;
         
-        // Wall-slide check
         bool on_wall_left = is_solid_box(player.x - 1, player.y, player.width, player.height);
         bool on_wall_right = is_solid_box(player.x + 1, player.y, player.width, player.height);
         
         if ((on_wall_left || on_wall_right) && !player.on_ground && player.vy > 0) {
-            if (player.vy > 3) player.vy = 3; // Cap fall speed while sliding wall
+            if (player.vy > 3) player.vy = 3; 
         } else if (player.vy > 12) {
             player.vy = 12;
         }
     }
     
-    // Y Movement & Collision
     int new_y = player.y + player.vy;
     if (!is_solid_box(player.x, new_y, player.width, player.height)) {
         player.y = new_y;
@@ -163,12 +137,11 @@ void update_player() {
     } else {
         if (player.vy > 0) {
             player.on_ground = true;
-            player.can_dash = true; // Recharge dash on touching floor
+            player.can_dash = true; 
         }
         player.vy = 0;
     }
     
-    // X Movement & Collision
     int new_x = player.x + player.vx;
     if (!is_solid_box(new_x, player.y, player.width, player.height)) {
         player.x = new_x;
@@ -176,12 +149,10 @@ void update_player() {
         player.vx = 0;
     }
     
-    // Clamp to boundaries
     if (player.x < 0) player.x = 0;
     if (player.x > SCREEN_WIDTH - player.width) player.x = SCREEN_WIDTH - player.width;
 }
 
-// Track previous button states for single-press actions
 static bool prev_jump = false;
 static bool prev_dash = false;
 
@@ -193,7 +164,6 @@ void handle_input() {
     bool key_jump = isKeyPressed(KEY_NSPIRE_SHIFT) || key_up;
     bool key_dash = isKeyPressed(KEY_NSPIRE_CTRL);
 
-    // Horizontal movement
     player.vx = 0; 
     if (key_left) {
         player.vx = -MOVE_SPEED;
@@ -203,13 +173,11 @@ void handle_input() {
         player.facing_left = false;
     }
 
-    // Jump & Wall-Jump Mechanics
     if (key_jump && !prev_jump) {
         if (player.on_ground) {
             player.vy = JUMP_POWER;
             player.on_ground = false;
         } else {
-            // Check wall jump
             if (is_solid_box(player.x - 2, player.y, player.width, player.height)) {
                 player.vy = JUMP_POWER;
                 player.vx = MOVE_SPEED * 2;
@@ -220,7 +188,6 @@ void handle_input() {
         }
     }
 
-    // Air-Dash Mechanic
     if (key_dash && !prev_dash && player.can_dash) {
         player.can_dash = false;
         player.dash_timer = DASH_DURATION;
@@ -234,7 +201,6 @@ void handle_input() {
         if (key_up) player.dash_dir_y = -1;
         else if (key_down) player.dash_dir_y = 1;
 
-        // Default to facing direction if no arrow is held
         if (player.dash_dir_x == 0 && player.dash_dir_y == 0) {
             player.dash_dir_x = player.facing_left ? -1 : 1;
         }
@@ -261,11 +227,9 @@ int main() {
         memset(buffer, 0, BUFFER_SIZE * sizeof(uint16_t));
         render_level(buffer);
 
-        // Pick Madeline sprite based on dash availability
-        const uint16_t *madeline_sprite = player.can_dash ? MADELINE_SPRITE : MADELINE_DASH_SPRITE;
-
-        // Draw player sprite with transparency & direction flipping
-        draw_sprite_masked(buffer, madeline_sprite, player.x, player.y, 8, 8, player.facing_left);
+        // Palette color shift based on dash charge (Red = ready, Blue = spent)
+        uint16_t madeline_color = player.can_dash ? PICO8_PALETTE[8] : PICO8_PALETTE[12];
+        draw_rect(buffer, player.x, player.y, player.width, player.height, madeline_color);
 
         lcd_blit(buffer, SCR_320x240_16);
         
