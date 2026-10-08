@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include "game_data.h"
+#include "assets.h" // Updated to match convert_assets.py output header
 
 #define SCREEN_WIDTH 320
 #define SCREEN_HEIGHT 240
@@ -10,14 +10,29 @@
 
 extern "C" void _fini(void) {}
 
-// PICO-8 Palette RGB565
+// PICO-8 16-Color Palette mapped to RGB565 for the TI-Nspire LCD
 const uint16_t PICO8_PALETTE[16] = {
-    0x0000, 0x190A, 0x7851, 0x028A, 0x8B32, 0x52AA, 0xC575, 0xFFFB,
-    0xF888, 0xFD20, 0xFFE0, 0x074A, 0x2CF9, 0x8393, 0xFBB5, 0xFE75
+    0x0000, // 0: Black
+    0x190A, // 1: Dark Blue
+    0x7851, // 2: Dark Purple
+    0x028A, // 3: Dark Green
+    0x8B32, // 4: Brown
+    0x52AA, // 5: Dark Gray
+    0xC575, // 6: Light Gray
+    0xFFFB, // 7: White
+    0xF888, // 8: Red
+    0xFD20, // 9: Orange
+    0xFFE0, // 10: Yellow
+    0x074A, // 11: Green
+    0x2CF9, // 12: Blue
+    0x8393, // 13: Lavender
+    0xFBB5, // 14: Pink
+    0xFE75  // 15: Peach
 };
 
-#define OFFSET_X ((320 - 128) / 2) // 96 px
-#define OFFSET_Y ((240 - 128) / 2) // 56 px
+// Offsets to center the 128x128 PICO-8 screen in the 320x240 LCD display
+#define OFFSET_X ((320 - 128) / 2) // 96 px offset
+#define OFFSET_Y ((240 - 128) / 2) // 56 px offset
 
 // Background Snow Particles
 struct Particle {
@@ -66,7 +81,7 @@ void spr(uint16_t *buffer, int sprite_id, int dest_x, int dest_y, bool flip_x = 
             
             uint8_t color_idx = CELESTE_GFX[src_y * 128 + src_x];
             
-            if (color_idx != 0) { // Color 0 = transparent
+            if (color_idx != 0) { // Color 0 is transparent
                 int screen_x = OFFSET_X + dest_x + px;
                 int screen_y = OFFSET_Y + dest_y + py;
                 
@@ -97,7 +112,6 @@ void init_player() {
 }
 
 void draw_player_hair(uint16_t *buffer) {
-    // Update trailing hair nodes
     float target_x = player.x + (player.facing_left ? 5 : 1);
     float target_y = player.y + 2;
 
@@ -109,7 +123,6 @@ void draw_player_hair(uint16_t *buffer) {
         player.hair[i].y += (player.hair[i-1].y - player.hair[i].y) * 0.6f;
     }
 
-    // Draw hair circles (PICO-8 Color 8 = Celeste Red)
     for (int i = 3; i >= 0; i--) {
         int hx = OFFSET_X + (int)player.hair[i].x;
         int hy = OFFSET_Y + (int)player.hair[i].y;
@@ -120,15 +133,16 @@ void draw_player_hair(uint16_t *buffer) {
                 int sx = hx + dx;
                 int sy = hy + dy;
                 if (sx >= 0 && sx < SCREEN_WIDTH && sy >= 0 && sy < SCREEN_HEIGHT) {
-                    buffer[sy * SCREEN_WIDTH + sx] = PICO8_PALETTE[8];
+                    buffer[sy * SCREEN_WIDTH + sx] = PICO8_PALETTE[8]; // Celeste Red
                 }
             }
         }
     }
 }
 
+// Active Room Coordinates (Level 1 = Room 0,2 in map grid)
 int room_x = 0;
-int room_y = 2; // Level 1
+int room_y = 2;
 
 void render_room(uint16_t *buffer) {
     int start_tx = room_x * 16;
@@ -137,7 +151,7 @@ void render_room(uint16_t *buffer) {
     for (int ty = 0; ty < 16; ty++) {
         for (int tx = 0; tx < 16; tx++) {
             uint8_t tile_id = mget(start_tx + tx, start_ty + ty);
-            if (tile_id != 0 && tile_id != 1) { // Skip tile 1 (player spawn)
+            if (tile_id != 0 && tile_id != 1) { // Skip tile ID 1 (spawn point)
                 spr(buffer, tile_id, tx * 8, ty * 8);
             }
         }
@@ -159,19 +173,19 @@ int main() {
         if (isKeyPressed(KEY_NSPIRE_UP)) { player.y -= 1.0f; }
         if (isKeyPressed(KEY_NSPIRE_DOWN)) { player.y += 1.0f; }
 
-        // Clear Screen to Dark Blue (PICO-8 color 1)
+        // Fill background with Dark Blue (PICO-8 Color 1)
         for (int i = 0; i < BUFFER_SIZE; i++) buffer[i] = PICO8_PALETTE[1];
 
-        // 1. Draw Snow Background
+        // 1. Render Background Snow
         update_and_draw_snow(buffer);
 
-        // 2. Render Level Tilemap
+        // 2. Render Room Tilemap
         render_room(buffer);
 
-        // 3. Render Madeline's Trailing Hair
+        // 3. Render Trailing Hair
         draw_player_hair(buffer);
 
-        // 4. Render Madeline Sprite (ID 1)
+        // 4. Render Player Sprite (ID 1)
         spr(buffer, 1, (int)player.x, (int)player.y, player.facing_left);
 
         lcd_blit(buffer, SCR_320x240_16);
