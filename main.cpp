@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include "assets.h" // Updated to match convert_assets.py output header
+#include "assets.h"
 
 #define SCREEN_WIDTH 320
 #define SCREEN_HEIGHT 240
@@ -10,25 +10,22 @@
 
 extern "C" void _fini(void) {}
 
-// PICO-8 16-Color Palette mapped to RGB565 for the TI-Nspire LCD
-const uint16_t PICO8_PALETTE[16] = {
-    0x0000, // 0: Black
-    0x190A, // 1: Dark Blue
-    0x7851, // 2: Dark Purple
-    0x028A, // 3: Dark Green
-    0x8B32, // 4: Brown
-    0x52AA, // 5: Dark Gray
-    0xC575, // 6: Light Gray
-    0xFFFB, // 7: White
-    0xF888, // 8: Red
-    0xFD20, // 9: Orange
-    0xFFE0, // 10: Yellow
-    0x074A, // 11: Green
-    0x2CF9, // 12: Blue
-    0x8393, // 13: Lavender
-    0xFBB5, // 14: Pink
-    0xFE75  // 15: Peach
-};
+// Fallbacks in case assets.h defines lowercase array names
+#ifndef CELESTE_GFX
+#ifdef celeste_gfx
+#define CELESTE_GFX celeste_gfx
+#elif defined(gfx)
+#define CELESTE_GFX gfx
+#endif
+#endif
+
+#ifndef CELESTE_MAP
+#ifdef celeste_map
+#define CELESTE_MAP celeste_map
+#elif defined(map)
+#define CELESTE_MAP map
+#endif
+#endif
 
 // Offsets to center the 128x128 PICO-8 screen in the 320x240 LCD display
 #define OFFSET_X ((320 - 128) / 2) // 96 px offset
@@ -102,7 +99,8 @@ struct Player {
     HairNode hair[4];
 };
 
-Player player = {16.0f, 96.0f, 0.0f, 0.0f, false};
+// Full initializer to resolve -Wmissing-field-initializers
+Player player = {16.0f, 96.0f, 0.0f, 0.0f, false, {{{0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}}}};
 
 void init_player() {
     for (int i = 0; i < 4; i++) {
