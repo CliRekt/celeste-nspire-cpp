@@ -39,7 +39,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: /tmp/Ndless
-          key: ndless-sdk-v4-${{ runner.os }}
+          key: ndless-sdk-v5-${{ runner.os }}
 
       - name: Set up Ndless SDK
         if: steps.cache-ndless.outputs.cache-hit != 'true'
@@ -50,8 +50,14 @@ jobs:
           # Patch stdlib.cpp for modern glibc compatibility
           sed -i '/get_current_dir_name/i #ifndef PATH_MAX\n#define PATH_MAX 4096\n#endif' /tmp/Ndless/ndless-sdk/libsyscalls/stdlib.cpp
           
-          # Build SDK tools & system libraries
+          # Build SDK tools first
           make -C /tmp/Ndless/ndless-sdk build-tools
+          
+          # Export path so sub-libraries can locate nspire-gcc
+          export PATH="/tmp/Ndless/ndless-sdk/bin:$PATH"
+          export NDLESS_SDK="/tmp/Ndless/ndless-sdk"
+          
+          # Build remaining system libraries
           make -C /tmp/Ndless/ndless-sdk build-libsyscalls build-libndls build-thirdparty build-system
 
           # Fix ldscript REVERSE keyword syntax error for binutils 2.38
