@@ -13,15 +13,18 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Install Essential Dependencies Only
+      - name: Install Essential Dependencies
         env:
           DEBIAN_FRONTEND: noninteractive
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq --no-install-recommends \
+            gcc \
+            g++ \
             gcc-arm-none-eabi \
             binutils-arm-none-eabi \
             libnewlib-arm-none-eabi \
+            libstdc++-arm-none-eabi-newlib \
             make \
             git \
             build-essential \
@@ -36,11 +39,12 @@ jobs:
         uses: actions/cache@v3
         with:
           path: /tmp/Ndless
-          key: ndless-sdk-v2-${{ runner.os }}
+          key: ndless-sdk-v4-${{ runner.os }}
 
       - name: Set up Ndless SDK
         if: steps.cache-ndless.outputs.cache-hit != 'true'
         run: |
+          rm -rf /tmp/Ndless
           git clone --recursive https://github.com/Ndless-Nspire/Ndless.git /tmp/Ndless
           
           # Patch stdlib.cpp for modern glibc compatibility
