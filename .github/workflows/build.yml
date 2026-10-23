@@ -39,7 +39,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: /tmp/Ndless
-          key: ndless-sdk-v5-${{ runner.os }}
+          key: ndless-sdk-v6-${{ runner.os }}
 
       - name: Set up Ndless SDK
         if: steps.cache-ndless.outputs.cache-hit != 'true'
@@ -53,26 +53,19 @@ jobs:
           # Build SDK tools first
           make -C /tmp/Ndless/ndless-sdk build-tools
           
-          # Export path so sub-libraries can locate nspire-gcc
-          export PATH="/tmp/Ndless/ndless-sdk/bin:$PATH"
-          export NDLESS_SDK="/tmp/Ndless/ndless-sdk"
+          # Add bin folder to GITHUB_PATH immediately so all sub-processes see nspire-gcc
+          echo "/tmp/Ndless/ndless-sdk/bin" >> $GITHUB_PATH
+          echo "NDLESS_SDK=/tmp/Ndless/ndless-sdk" >> $GITHUB_ENV
           
-          # Build remaining system libraries
-          make -C /tmp/Ndless/ndless-sdk build-libsyscalls build-libndls build-thirdparty build-system
+          # Build remaining system libraries passing PATH directly to make
+          PATH="/tmp/Ndless/ndless-sdk/bin:$PATH" NDLESS_SDK="/tmp/Ndless/ndless-sdk" make -C /tmp/Ndless/ndless-sdk build-libsyscalls build-libndls build-thirdparty build-system
 
           # Fix ldscript REVERSE keyword syntax error for binutils 2.38
           sed -i 's/REVERSE(\([^)]*\))/\1/g' /tmp/Ndless/ndless-sdk/system/ldscript
           dos2unix /tmp/Ndless/ndless-sdk/system/ldscript
 
-      - name: Configure Environment
-        run: |
-          echo "/tmp/Ndless/ndless-sdk/bin" >> $GITHUB_PATH
-          echo "NDLESS_SDK=/tmp/Ndless/ndless-sdk" >> $GITHUB_ENV
-
       - name: Build App
         run: |
-          export PATH="/tmp/Ndless/ndless-sdk/bin:$PATH"
-          export NDLESS_SDK=/tmp/Ndless/ndless-sdk
           make clean || true
           make
 
