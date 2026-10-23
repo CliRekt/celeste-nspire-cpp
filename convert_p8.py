@@ -30,21 +30,26 @@ def parse_p8(filename):
     while len(gfx_data) < 16384:
         gfx_data.append(0)
 
-    # Output generated game_data.h
-    with open('game_data.h', 'w') as f:
-        f.write('#ifndef GAME_DATA_H\n#define GAME_DATA_H\n\n')
+    # Write assets.h (Header interface for C++)
+    with open('assets.h', 'w') as f:
+        f.write('#ifndef ASSETS_H\n#define ASSETS_H\n\n')
         f.write('#include <stdint.h>\n\n')
-        
+        f.write('#ifdef __cplusplus\nextern "C" {\n#endif\n\n')
+        f.write('extern const uint8_t CELESTE_MAP[4096];\n')
+        f.write('extern const uint8_t CELESTE_GFX[16384];\n\n')
+        f.write('#ifdef __cplusplus\n}\n#endif\n\n')
+        f.write('#endif // ASSETS_H\n')
+
+    # Write assets.cpp (Data definitions to prevent duplicate symbol linker errors)
+    with open('assets.cpp', 'w') as f:
+        f.write('#include "assets.h"\n\n')
         f.write('const uint8_t CELESTE_MAP[4096] = {\n    ')
         f.write(', '.join(map(str, map_data)))
         f.write('\n};\n\n')
-
         f.write('const uint8_t CELESTE_GFX[16384] = {\n    ')
         f.write(', '.join(map(str, gfx_data)))
-        f.write('\n};\n\n')
-
-        f.write('#endif // GAME_DATA_H\n')
+        f.write('\n};\n')
 
 if __name__ == '__main__':
     parse_p8('celeste.p8')
-    print("Generated game_data.h successfully.")
+    print("Generated assets.h and assets.cpp successfully.")
